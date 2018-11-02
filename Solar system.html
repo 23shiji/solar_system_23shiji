@@ -140,7 +140,7 @@ var Sat=map.getContext("2d");
 var Ur=map.getContext("2d");
 var Nep=map.getContext("2d");
 var Pl=map.getContext("2d");
-var centerP=new Array(600,300);
+var centerP=new Array(600,250);
 var rotation=-Math.PI/6;
 
 //绘制背景
@@ -155,8 +155,9 @@ function trP(posxy) {
 	var dis=Math.sqrt(posxy[0]*posxy[0]+posxy[1]*posxy[1]);
 	//pos[0]=posxy[0]/4*700+400;
 	//pos[1]=posxy[1]/4*700+350;
-	pos1[0]=posxy[0]/dis*Math.log(dis*0.8+1)/4*700;
-	pos1[1]=posxy[1]/dis*Math.log(dis*0.8+1)/4*700;
+	//对数坐标
+	pos1[0]=posxy[0]/dis*Math.log(dis*1+1)/4*700;
+	pos1[1]=posxy[1]/dis*Math.log(dis*1+1)/4*700;
 	pos[0]=pos1[0]*Math.cos(rotation)-pos1[1]*Math.sin(rotation)+centerP[0];
 	pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+centerP[1];
 	return pos;
@@ -219,11 +220,11 @@ text1.fillText("Inner Solar System",10,50);
 
 text1.font="20px Verdana";
 text1.fillStyle="#ffffff"
-text1.fillText(" Time: "+nowDate,10,680);
+text1.fillText(" Time: "+nowDate,10,690);
 
 text1.font="20px Verdana";
 text1.fillStyle="#ffffff"
-text1.fillText("Institute of Physics,Yipoils",920,680);
+text1.fillText("Institute of Physics,Yipoils",920,690);
 
 
 var dis=Math.sqrt((orbitE[0]-orbitM[0])*(orbitE[0]-orbitM[0])+(orbitE[1]-orbitM[1])*(orbitE[1]-orbitM[1])+(orbitE[2]-orbitM[2])*(orbitE[2]-orbitM[2]));
