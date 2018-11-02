@@ -1,212 +1,300 @@
 <!DOCTYPE html>
 <!-- saved from url=(0039)http://wangdake.xyz/Solar%20system.html -->
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<title>Solar system</title>
+	<script src="./dist/zrender.min.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        html, body, #main {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+	<script>
+	/*
+	太阳系行星以及冥王星近似位置计算
+
+	利用Keplerian Elements近似计算3000BC-3000AD太阳系主要天体位置
+	精度有限，更加高精度的星表需要通过服务器计算，不适合利用浏览器脚本进行计算。
+	参考文献：https://ssd.jpl.nasa.gov/txt/aprx_pos_planets.pdf
+	感谢NASA下属JPL实验室提供轨道元素
+
+	驿宁物理研究——Manifolds
+	*/
+	//主要天体轨道元素，来自参考文献tables2a，2b
+	var paraM = new Array(0.387098430,0.20563661,7.00559432,252.25166724,77.45771895,48.33961819,0.00000000,0.00002123, -0.00590158,149472.67486623,0.15940013,-0.12214182,0,0,0,0);
+	var paraV  = new Array(0.72332102,0.00676399,  3.39777545,  181.97970850,131.76755713, 76.67261496, -0.00000026, -0.00005107,  0.00043494,58517.81560260,  0.05679648, -0.27274174,0,0,0,0); 
+	var paraE  = new Array(1.00000018, 0.01673163,-0.00054346, 100.46691572 ,102.93005885,-5.11260389, -0.00000003,-0.00003661,-0.01337178,35999.37306329, 0.31795260,-0.24123856,0,0,0,0);
+	var paraMa=new Array(1.52371243,  0.09336511,  1.85181869,-4.56813164,-23.91744784, 49.71320984, 0.00000097,  0.00009149, -0.00724757,19140.29934243,  0.45223625, -0.26852431,0,0,0,0);
+	var paraJ = new Array(5.20248019,  0.04853590,  1.29861416,34.33479152, 14.27495244,100.29282654, -0.00002864,  0.00018026, -0.00322699, 3034.90371757,  0.18199196,  0.13024619, -0.00012452, 0.06064060,-0.35635438,38.35125000);
+	var paraS = new Array(9.54149883,  0.05550825,  2.49424102,50.07571329, 92.86136063,113.63998702, -0.00003065, -0.00032044,  0.00451969, 1222.11494724,  0.54179478, -0.25015002,0.00025899,-0.13434469, 0.87320147,38.35125000);
+	var paraU = new Array(19.18797948,  0.04685740,  0.77298127,  314.20276625,172.43404441, 73.96250215, -0.00020455, -0.00001550, -0.00180155,  428.49512595,  0.09266985,  0.05739699,0.00058331,-0.97731848, 0.17689245, 7.67025000);
+	var paraN = new Array(30.06952752,  0.00895439,  1.77005520,  304.22289287, 46.68158724,131.78635853,  0.00006447,  0.00000818,  0.00022400,  218.46515314,  0.01009938, -0.00606302,-0.00041348, 0.68346318,-0.10162547, 7.67025000);
+	var paraP = new Array(39.48686035,  0.24885238, 17.14104260,  238.96535011,224.09702598,110.30167986,  0.00449751,  0.00006016,  0.00000501,  145.18042903, -0.00968827, -0.00809981,-0.01262724,0,0,0);		 
+
+
+	var Degree=Math.PI/180;
+	var a = 1;
+	var time ;
+	var d = new Date();
+
+
+	//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
+	time=(d.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000)+2;
+
+	//定义轨道元素对象。输入参数和时间，返回轨道元素。
+	function Elements(para,teph){
+		//var t = (teph-2451545.0)/36525;//当输入时间为儒略日是启用。
+		var t =teph;
+		var E,dE,dM,i;
+		dE=1;
+		i=1;
+
+		this.a=para[0]+t*para[6];
+		this.e=para[1]+t*para[7];
+		this.Inc=para[2]+t*para[8];
+		this.Om=para[5]+t*para[11];
+		this.om=para[4]+t*para[10]-this.Om;
+		this.M=(para[3]+t*para[9]-para[4]-t*para[10]+para[12]*t*t+para[13]*Math.cos(para[15]*t*Degree)+para[14]*Math.sin(para[15]*t*Degree))%360;
+		this.es=this.e*180/Math.PI;
+
+		//迭代计算文献中8-31式
+		E=this.M+this.es*Math.sin(this.M*Degree);
+		while((Math.abs(dE)>0.000001||i<10)){
+			dM=this.M-(E-this.es*Math.sin(E*Degree));
+			dE=dM/(1-this.e*Math.cos(E*Degree));
+			E=E+dE;
+			i++;
+		}
+		
+		this.E=E;
+	}
+
+	//利用轨道元素计算在日心坐标系*下的位置。
+	//输入轨道元素，输出数组包含一组x，y，z坐标。
+	//* 在Ｊ2000.0框架下以太阳为原点，x-y面为黄道面，x轴指向春分点的坐标系。
+	function getPostion(elements){
+		var x1,y1;
+		var xecl,yecl,zecl;
+		var position=new Array(3);
+		
+		x1= elements.a*(Math.cos(elements.E*Degree)-elements.e);
+		y1= elements.a*Math.sqrt(1 - elements.e*elements.e)*Math.sin(elements.E*Degree);	
+		
+		xecl= (Math.cos(elements.om*Degree)*Math.cos(elements.Om*Degree) - Math.sin(elements.om*Degree)*Math.sin(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*x1+ (-Math.sin(elements.om*Degree)*Math.cos(elements.Om*Degree)- Math.cos(elements.om*Degree)*Math.sin(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*y1 ;
+		yecl= (Math.cos(elements.om*Degree)*Math.sin(elements.Om*Degree) + Math.sin(elements.om*Degree)*Math.cos(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*x1+ (-Math.sin(elements.om*Degree)*Math.sin(elements.Om*Degree)+Math.cos(elements.om*Degree)*Math.cos(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*y1 ;
+		zecl= Math.sin(elements.om*Degree)*Math.sin(elements.Inc*Degree)*x1 + Math.cos(elements.om*Degree)*Math.sin(elements.Inc*Degree)*y1 ;
+
+		position[0]=xecl;
+		position[1]=yecl;
+		position[2]=zecl;
+		
+		return position;	
+	}
+
+
+	//计算过去300地球天内每10天的位置
+	//输入天体参数与时间，反回数组顺序为x,y,z。
+	var orbitCount=50;
+	function getOrbit(para,teph){
+		var t=teph;
+		var ele = new Elements(para,t);
+		var orbit=new Array(orbitCount);
+		var postion=getPostion(ele);
+		orbit[0] = (postion);
+		
+		for (var i=1;i<orbitCount;i++)
+		{
+			t=t - 4 / 36525;
+			var ele=new Elements(para,t);
+			var postion=getPostion(ele);
+			orbit[i] =postion;
+		}
+		return orbit;
+	}
+
+
+	//内太阳系轨道
+	orbitM = getOrbit(paraM,time);
+	orbitV = getOrbit(paraV,time);
+	orbitE = getOrbit(paraE,time);
+	orbitMa = getOrbit(paraMa,time);
+	orbitJ = getOrbit(paraJ,time);
+	orbitS = getOrbit(paraS,time);
+	orbitU = getOrbit(paraU,time);
+	orbitN = getOrbit(paraN,time);
+	orbitP = getOrbit(paraP,time);
+
+	</script>
+	
 </head>
+
+
 <body>
 
+<div id="main"  style="background: #2b3e5e"></div>
+
 <script>
+	// 初始化zrender
+    var main = document.getElementById('main');
+    var map = zrender.init(main);
+	var w = map.getWidth();
+    	var h = map.getHeight();
+	var rotation=-Math.PI / 6;
+	
+	
+	var solarSystem = new zrender.Group();
+	var sun = new zrender.Group();
+	var mercury = new zrender.Group();
+	var venus = new zrender.Group();
+	var earth = new zrender.Group();
+	var mars = new zrender.Group();
+	var Jup = new zrender.Group();
+	var Sat = new zrender.Group();
+	var Ur = new zrender.Group();
+	var Nep = new zrender.Group();
+	var Pl = new zrender.Group();
+	
+	
+	//将太阳系位置转换为画布坐标
+	function trP(posxy) {
+		var pos1=new Array(2);
+		var pos=new Array(2);
+		var dis=Math.sqrt(posxy[0]*posxy[0]+posxy[1]*posxy[1]);
+		//pos[0]=posxy[0]/4*700+400;
+		//pos[1]=posxy[1]/4*700+350;
+		//对数坐标
+		if(dis!=0){
+			pos1[0]=posxy[0] / dis*Math.log(dis*1+1) / 3.5*h;
+			pos1[1]=posxy[1] / dis*Math.log(dis*1+1) / 3.5*h;
+		}
+		else{
+			pos1[0]=0;
+			pos1[1]=0;
+		}
+		pos[0]=pos1[0]*Math.cos(rotation)- pos1[1]*Math.sin(rotation)+w / 2;
+		pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+h / 3;
+		return pos;
+	}
+	
+	
+	//绘制行星函数
+	function drawPlanet(groupName,position,radius,color){
+		var px = trP(position)[0];
+		var py = trP(position)[1];
+		
+				
+		var planet = new zrender.Circle({
+	        shape: {
+	            cx: px,
+	            cy: py,
+	            r: radius
+	        },
+	        style: {
+	            fill: color,
+	            //stroke: '#f3dc8a'
+	        }
+    		});
+			
+		groupName.add(planet);
+	}
+	
+	
+	//绘制轨道函数
+	function drawOrbit(groupName,orbit,color){
+		var orbit2D = new Array(orbit.length);
+		for(var i=0;i<orbit.length;i++){
+			orbit2D[i] = [trP(orbit[i])[0],trP(orbit[i])[1]];
+		}
+
+		var orbitLine = new zrender.Polyline({
+			shape:{
+				points:orbit2D,
+				smooth: 'spline'
+			},	
+		    style: {
+		        //fill: '#fff',
+		        stroke: color
+		    }
+		});
+		groupName.add(orbitLine);
+	}
+	
+	//绘制轨迹与行星
+	function drawObject(groupName,orbit,radius,color){
+		drawPlanet(groupName,orbit[0],radius,color);
+		drawOrbit(groupName,orbit,color);
+		solarSystem.add(groupName);
+	}
+	
+	
+	//绘制太阳
+	drawPlanet(sun,[0,0],25,'#f3dc8a');
+	solarSystem.add(sun);
+	//alert(trP(sunPosition));
+	
+	drawObject(mercury,orbitM,4,"#efc6bb");
+	drawObject(venus,orbitV,7,"#b2cbd1");
+	drawObject(earth,orbitE,8,"#a9ce95");
+	drawObject(mars,orbitMa,5,"#f4b388");
+	drawObject(Jup,orbitJ,17,"#587bb0");
+	drawObject(Sat,orbitS,15,"#b6cbce");
+	drawObject(Ur,orbitU,12,"#fcfcf6");
+	drawObject(Nep,orbitN,11,"#3e649b");
+	drawObject(Pl,orbitP,3,"#3e649b");
+	
+	var t1 = new zrender.Text({
+        style: {
+            text: 'Inner Solar System',
+            textAlign: 'left',
+            textVerticalAlign: 'top',
+            fontSize: 40,
+            fontFamily: 'Lato',
+            //fontWeight: 'bolder',
+            textFill: '#fff',
+            //blend: 'lighten'
+        },
+        position: [10,10]
+    });
+    map.add(t1);
+	
+	var t1 = new zrender.Text({
+        style: {
+            text: 'Institute of Physics,Yipoils',
+            textAlign: 'right',
+            textVerticalAlign: 'bottom',
+            fontSize: 20,
+            fontFamily: 'Lato',
+            //fontWeight: 'bolder',
+            textFill: '#fff',
+            //blend: 'lighten'
+        },
+        position: [w - 15,h - 10]
+    });
+    map.add(t1);
+	
+	
+	
+	
+	/*
+	var solarSystemObject=solarSystem.children()
+	 solarSystemObject[1].animate('shape', true)
+        .when(1000, {
+            r: 20
+        })
+        .when(2000, {
+            r: 10
+        })
+        .start();*/
+	
+	
+	map.add(solarSystem);
+		
+	
 /*
-太阳系行星以及冥王星近似位置计算
-
-利用Keplerian Elements近似计算3000BC-3000AD太阳系主要天体位置
-精度有限，更加高精度的星表需要通过服务器计算，不适合利用浏览器脚本进行计算。
-参考文献：https://ssd.jpl.nasa.gov/txt/aprx_pos_planets.pdf
-感谢NASA下属JPL实验室提供轨道元素
-
-驿宁物理研究——Manifolds
-*/
-//主要天体轨道元素，来自参考文献tables2a，2b
-var paraM = new Array(0.387098430,0.20563661,7.00559432,252.25166724,77.45771895,48.33961819,0.00000000,0.00002123, -0.00590158,149472.67486623,0.15940013,-0.12214182,0,0,0,0);
-var paraV  = new Array(0.72332102,0.00676399,  3.39777545,  181.97970850,131.76755713, 76.67261496, -0.00000026, -0.00005107,  0.00043494,58517.81560260,  0.05679648, -0.27274174,0,0,0,0); 
-var paraE  = new Array(1.00000018, 0.01673163,-0.00054346, 100.46691572 ,102.93005885,-5.11260389, -0.00000003,-0.00003661,-0.01337178,35999.37306329, 0.31795260,-0.24123856,0,0,0,0);
-var paraMa=new Array(1.52371243,  0.09336511,  1.85181869,-4.56813164,-23.91744784, 49.71320984, 0.00000097,  0.00009149, -0.00724757,19140.29934243,  0.45223625, -0.26852431,0,0,0,0);
-var paraJ = new Array(5.20248019,  0.04853590,  1.29861416,34.33479152, 14.27495244,100.29282654, -0.00002864,  0.00018026, -0.00322699, 3034.90371757,  0.18199196,  0.13024619, -0.00012452, 0.06064060,-0.35635438,38.35125000);
-var paraS = new Array(9.54149883,  0.05550825,  2.49424102,50.07571329, 92.86136063,113.63998702, -0.00003065, -0.00032044,  0.00451969, 1222.11494724,  0.54179478, -0.25015002,0.00025899,-0.13434469, 0.87320147,38.35125000);
-var paraU = new Array(19.18797948,  0.04685740,  0.77298127,  314.20276625,172.43404441, 73.96250215, -0.00020455, -0.00001550, -0.00180155,  428.49512595,  0.09266985,  0.05739699,0.00058331,-0.97731848, 0.17689245, 7.67025000);
-var paraN = new Array(30.06952752,  0.00895439,  1.77005520,  304.22289287, 46.68158724,131.78635853,  0.00006447,  0.00000818,  0.00022400,  218.46515314,  0.01009938, -0.00606302,-0.00041348, 0.68346318,-0.10162547, 7.67025000);
-var paraP = new Array(39.48686035,  0.24885238, 17.14104260,  238.96535011,224.09702598,110.30167986,  0.00449751,  0.00006016,  0.00000501,  145.18042903, -0.00968827, -0.00809981,-0.01262724,0,0,0);		 
-
-
-var Degree=Math.PI/180;
-var a = 1;
-var time ;
-var d = new Date();
-
-
-//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
-time=(d.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000)+2;
-
-//定义轨道元素对象。输入参数和时间，返回轨道元素。
-function Elements(para,teph){
-	//var t = (teph-2451545.0)/36525;//当输入时间为儒略日是启用。
-	var t =teph;
-	var E,dE,dM,i;
-	dE=1;
-	i=1;
-
-	this.a=para[0]+t*para[6];
-	this.e=para[1]+t*para[7];
-	this.Inc=para[2]+t*para[8];
-	this.Om=para[5]+t*para[11];
-	this.om=para[4]+t*para[10]-this.Om;
-	this.M=(para[3]+t*para[9]-para[4]-t*para[10]+para[12]*t*t+para[13]*Math.cos(para[15]*t*Degree)+para[14]*Math.sin(para[15]*t*Degree))%360;
-	this.es=this.e*180/Math.PI;
-
-	//迭代计算文献中8-31式
-	E=this.M+this.es*Math.sin(this.M*Degree);
-	while((Math.abs(dE)>0.000001||i<10)){
-		dM=this.M-(E-this.es*Math.sin(E*Degree));
-		dE=dM/(1-this.e*Math.cos(E*Degree));
-		E=E+dE;
-		i++;
-	}
-	
-	this.E=E;
-}
-
-//利用轨道元素计算在日心坐标系*下的位置。
-//输入轨道元素，输出数组包含一组x，y，z坐标。
-//* 在Ｊ2000.0框架下以太阳为原点，x-y面为黄道面，x轴指向春分点的坐标系。
-function getPostion(elements){
-	var x1,y1;
-	var xecl,yecl,zecl;
-	var position=new Array(3);
-	
-	x1= elements.a*(Math.cos(elements.E*Degree)-elements.e);
-	y1= elements.a*Math.sqrt(1 - elements.e*elements.e)*Math.sin(elements.E*Degree);	
-	
-	xecl= (Math.cos(elements.om*Degree)*Math.cos(elements.Om*Degree) - Math.sin(elements.om*Degree)*Math.sin(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*x1+ (-Math.sin(elements.om*Degree)*Math.cos(elements.Om*Degree)- Math.cos(elements.om*Degree)*Math.sin(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*y1 ;
-	yecl= (Math.cos(elements.om*Degree)*Math.sin(elements.Om*Degree) + Math.sin(elements.om*Degree)*Math.cos(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*x1+ (-Math.sin(elements.om*Degree)*Math.sin(elements.Om*Degree)+Math.cos(elements.om*Degree)*Math.cos(elements.Om*Degree)*Math.cos(elements.Inc*Degree))*y1 ;
-	zecl= Math.sin(elements.om*Degree)*Math.sin(elements.Inc*Degree)*x1 + Math.cos(elements.om*Degree)*Math.sin(elements.Inc*Degree)*y1 ;
-
-	position[0]=xecl;
-	position[1]=yecl;
-	position[2]=zecl;
-	
-	return position;	
-}
-
-
-//计算过去300地球天内每天的位置
-//输入天体参数与时间，反回数组顺序为x,y,z。
-function getOrbit(para,teph){
-	var t=teph;
-	var ele = new Elements(para,t);
-	var orbit=new Array();
-	var postion=getPostion(ele);
-	orbit[0] =postion[0];
-	orbit[1] =postion[1];
-	orbit[2] =postion[2];
-	
-	for (var i=1;i<300;i++)
-	{
-		t=t-1/36525;
-		var ele=new Elements(para,t);
-		var postion=getPostion(ele);
-		orbit[3*i] =postion[0];
-	    orbit[3*i+1] =postion[1];
-	    orbit[3*i+2] =postion[2];
-	}
-	return orbit;
-}
-
-
-//内太阳系轨道
-orbitM = getOrbit(paraM,time);
-orbitV = getOrbit(paraV,time);
-orbitE = getOrbit(paraE,time);
-orbitMa = getOrbit(paraMa,time);
-orbitJ = getOrbit(paraJ,time);
-orbitS = getOrbit(paraS,time);
-orbitU = getOrbit(paraU,time);
-orbitN = getOrbit(paraN,time);
-orbitP = getOrbit(paraP,time);
-
-</script>
-
-<canvas id="solarSystemMap" width="1200" height="700"></canvas>
-
-<script>
-var map=document.getElementById("solarSystemMap");
-var bg =map.getContext("2d");
-var sun=map.getContext("2d");
-var mercury=map.getContext("2d");
-var venus=map.getContext("2d");
-var earth=map.getContext("2d");
-var mars=map.getContext("2d");
-var Jup=map.getContext("2d");
-var Sat=map.getContext("2d");
-var Ur=map.getContext("2d");
-var Nep=map.getContext("2d");
-var Pl=map.getContext("2d");
-var centerP=new Array(600,250);
-var rotation=-Math.PI/6;
-
-//绘制背景
-bg.fillStyle="#2b3e5e";
-bg.fillRect(0,0,1200,700);
-
-
-//将太阳系位置转换为画布坐标
-function trP(posxy) {
-	var pos1=new Array(2);
-	var pos=new Array(2);
-	var dis=Math.sqrt(posxy[0]*posxy[0]+posxy[1]*posxy[1]);
-	//pos[0]=posxy[0]/4*700+400;
-	//pos[1]=posxy[1]/4*700+350;
-	//对数坐标
-	pos1[0]=posxy[0]/dis*Math.log(dis*1+1)/4*700;
-	pos1[1]=posxy[1]/dis*Math.log(dis*1+1)/4*700;
-	pos[0]=pos1[0]*Math.cos(rotation)-pos1[1]*Math.sin(rotation)+centerP[0];
-	pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+centerP[1];
-	return pos;
-}
-
-//绘制太阳
-sun.fillStyle="#f3dc8a";
-sun.beginPath();
-sun.arc(centerP[0],centerP[1],25,0,Math.PI*2,true);
-sun.closePath();
-sun.fill();
-
-
-//绘制行星函数
-function drawPlanet(planet,position,radius,color){
-	var px = trP(position)[0];
-	var py = trP(position)[1];
-
-	planet.fillStyle=color;
-	planet.beginPath();
-	planet.arc(px,py,radius,0,Math.PI*2,true);
-	planet.closePath();
-	planet.fill();
-}
-
-//绘制轨道
-function drawOrbit(planet,orbit,radius,color){
-	var r=radius;
-	for (var i=0;i<300;i++)
-	{
-		var pos1=new Array(3);
-		pos1[0]=orbit[i*3];
-		pos1[1]=orbit[i*3+1];
-		pos1[2]=orbit[i*3+2];
-		if(i>0){r=1;}
-		drawPlanet(planet,pos1,r,color);
-	}
-}
-
-drawOrbit(mercury,orbitM,4,"#efc6bb");
-drawOrbit(venus,orbitV,7,"#b2cbd1");
-drawOrbit(earth,orbitE,8,"#a9ce95");
-drawOrbit(mars,orbitMa,5,"#f4b388");
-drawOrbit(Jup,orbitJ,17,"#587bb0");
-drawOrbit(Sat,orbitS,15,"#b6cbce");
-drawOrbit(Ur,orbitU,12,"#fcfcf6");
-drawOrbit(Nep,orbitN,11,"#3e649b");
-drawOrbit(Pl,orbitP,3,"#3e649b");
-
+var map=document.getElementById("main");
 
 //界面与文字
 var text1=map.getContext("2d");
@@ -214,17 +302,9 @@ var text1=map.getContext("2d");
 var nowDate = new Date();
 nowDate.setFullYear(2218);
 
-text1.font="50px Verdana";
-text1.fillStyle="#ffffff"
-text1.fillText("Inner Solar System",10,50);
-
 text1.font="20px Verdana";
 text1.fillStyle="#ffffff"
 text1.fillText(" Time: "+nowDate,10,690);
-
-text1.font="20px Verdana";
-text1.fillStyle="#ffffff"
-text1.fillText("Institute of Physics,Yipoils",920,690);
 
 
 var dis=Math.sqrt((orbitE[0]-orbitM[0])*(orbitE[0]-orbitM[0])+(orbitE[1]-orbitM[1])*(orbitE[1]-orbitM[1])+(orbitE[2]-orbitM[2])*(orbitE[2]-orbitM[2]));
@@ -239,7 +319,7 @@ line.lineTo(trP(orbitM)[0],trP(orbitM)[1]);
 line.lineWidth=2;
 line.strokeStyle = "#ffffff";
 line.stroke();
-
+*/
 </script>
 
 
