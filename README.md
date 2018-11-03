@@ -13,4 +13,4 @@ An online map of solar system after 200 years later.
 
 ##太阳系2D地图
 
-利用Zrender进行2D渲染，以及事件处理
+利用Zrender进行2D渲染，以及事件处理，增加动画与计算天体之间距离。
