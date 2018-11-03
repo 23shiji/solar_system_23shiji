@@ -204,7 +204,8 @@
 	        style: {
 	            fill: color,
 	            //stroke: '#f3dc8a'
-	        },//鼠标落下动画
+	        },
+			z:1,//鼠标落下动画
 			onmouseover: function () {
                 this.animate('shape')
                     .when(200, {r:radius*1.5 })
@@ -239,7 +240,8 @@
 		        //fill: '#fff',
 		        stroke: color,
 				lineWidth:2
-		    }
+		    },
+			z:0
 		});
 		groupName.add(orbitLine);
 	}
