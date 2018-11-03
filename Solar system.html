@@ -143,7 +143,8 @@
 	var w = map.getWidth();
     	var h = map.getHeight();
 	var rotation=-Math.PI / 6;
-	
+	//角动量,单位为天文单位*千米每秒set自身质量为1
+	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005]
 	
 	var solarSystem = new zrender.Group();
 	var sun = new zrender.Group();
@@ -156,7 +157,9 @@
 	var Ur = new zrender.Group();
 	var Nep = new zrender.Group();
 	var Pl = new zrender.Group();
-	
+	var goals = new zrender.Group();
+	var tmpText= new zrender.Text();
+	var lineGoals=new zrender.Line();
 	
 	//将太阳系位置转换为画布坐标
 	function trP(posxy) {
@@ -167,8 +170,10 @@
 		//pos[1]=posxy[1]/4*700+350;
 		//对数坐标
 		if(dis!=0){
-			pos1[0]=posxy[0] / dis*Math.log(dis*1+1) / 3.5*h;
-			pos1[1]=posxy[1] / dis*Math.log(dis*1+1) / 3.5*h;
+			//pos1[0]=posxy[0] / dis*Math.log(Math.sqrt(dis)+0.6) / 2*h;
+			//pos1[1]=posxy[1] / dis*Math.log(Math.sqrt(dis)+0.6) / 2*h;
+			pos1[0]=posxy[0] / dis*Math.log(dis+1) / 3.5*h;
+			pos1[1]=posxy[1] / dis*Math.log(dis+1) / 3.5*h;
 		}
 		else{
 			pos1[0]=0;
@@ -179,6 +184,10 @@
 		return pos;
 	}
 	
+	//计算空间两个点的距离
+	function distance (p1,p2){
+		return Math.sqrt((p1[0]-p2[0])*(p1[0]-p2[0])+(p1[1]-p2[1])*(p1[1]-p2[1])+(p1[2]-p2[2])*(p1[2]-p2[2]));
+	}
 	
 	//绘制行星函数
 	function drawPlanet(groupName,position,radius,color){
@@ -195,7 +204,19 @@
 	        style: {
 	            fill: color,
 	            //stroke: '#f3dc8a'
-	        }
+	        },//鼠标落下动画
+			onmouseover: function () {
+                this.animate('shape')
+                    .when(200, {r:radius*1.5 })
+					.when(1000, {r:radius*1.5 })
+					.when(1200, {r:radius })
+                    .start();
+				groupName.childAt(0).animate('style')
+					.when(200, {lineWidth:5})
+					.when(1000, {lineWidth:5})
+					.when(1200, {lineWidth:2})
+                    .start();
+            }
     		});
 			
 		groupName.add(planet);
@@ -216,35 +237,131 @@
 			},	
 		    style: {
 		        //fill: '#fff',
-		        stroke: color
+		        stroke: color,
+				lineWidth:2
 		    }
 		});
 		groupName.add(orbitLine);
 	}
 	
 	//绘制轨迹与行星
-	function drawObject(groupName,orbit,radius,color){
-		drawPlanet(groupName,orbit[0],radius,color);
+	function drawObject(groupName,orbit,radius,color,planetName,aM){
 		drawOrbit(groupName,orbit,color);
+		drawPlanet(groupName,orbit[0],radius,color);
 		solarSystem.add(groupName);
+		groupName.on('click',function(){drawLine(groupName,orbit,radius,planetName,aM)});
 	}
 	
+	//点击生成圆圈与路线
+	function drawLine(groupName,orbit,radius,planetName,aM) {
+		//目标圆圈
+		var goal= new zrender.Circle({
+			shape:{
+				cx: groupName.childAt(1).shape.cx,
+        			cy: groupName.childAt(1).shape.cy,
+        			r: radius*1.7,
+				xt:orbit[0][0],//储存天体实际位置信息到元素里面
+				yt:orbit[0][1],
+				zt:orbit[0][2]
+			},
+			style:{
+				lineWidth:2,
+				stroke:'#fff',
+				fill: 'transparent'
+			},
+			silent:true
+		});
+		goal.animate('shape', true)
+	        .when(1000, {
+	            r: radius*2.2
+	        })
+	        .when(2000, {
+	            r: radius*1.7
+	        })
+	        .start();
+		
+		//	名称与速度信息
+		var infText= new zrender.Text({
+			style:{
+				text:planetName+' '+(aM / distance(orbit[0],[0,0,0])).toFixed(2)+'km/s',
+				textAlign: 'left',
+	            textVerticalAlign: 'top',
+	            fontSize: 15,
+	            fontFamily: 'Lato',
+	            textFill: '#fff'
+			},
+			position:[groupName.childAt(1).shape.cx+radius*1.7,groupName.childAt(1).shape.cy+radius*1.7],
+			silent:true
+		});
+		goals.add(goal);
+		goals.add(infText);
+		map.add(goals);
+		
+		//alert(goals.childCount());
+		//判断用户操作
+		if(goals.childCount()==4){
+			//生成路线和路线信息
+			lineGoals= new zrender.Line({
+				shape:{
+					x1:goals.childAt(0).shape.cx,
+					y1:goals.childAt(0).shape.cy,
+					x2:goals.childAt(2).shape.cx,
+					y2:goals.childAt(2).shape.cy,
+					percent:0
+				},
+				style:{
+					lineWidth:2,
+					stroke:'#fff'
+				},
+				slient:true
+			});
+			lineGoals.animate('shape')
+	        .when(1000, {
+	            percent: 1
+	        })
+	        .start();
+			
+			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
+			tmpText = new zrender.Text({
+				style:{
+					text:'Distance: '+disG.toFixed(2)+'au\nTime:'+(disG / 0.137).toFixed(0)+'days',
+					textAlign: 'left',
+		            textVerticalAlign: 'top',
+		            fontSize: 20,
+		            fontFamily: 'Lato',
+		            textFill: '#fff'
+				},
+				position:[w-200,0],
+				silent:true
+			});
+			map.add(tmpText);
+		}
+		map.add(lineGoals);
+		if(goals.childCount()>4){
+			lineGoals.attr('invisible',true);
+			tmpText.attr('invisible',true);
+			goals.removeAll();
+			drawLine(groupName,orbit,radius,planetName,aM)
+		}
+	}
 	
 	//绘制太阳
 	drawPlanet(sun,[0,0],25,'#f3dc8a');
 	solarSystem.add(sun);
 	//alert(trP(sunPosition));
 	
-	drawObject(mercury,orbitM,4,"#efc6bb");
-	drawObject(venus,orbitV,7,"#b2cbd1");
-	drawObject(earth,orbitE,8,"#a9ce95");
-	drawObject(mars,orbitMa,5,"#f4b388");
-	drawObject(Jup,orbitJ,17,"#587bb0");
-	drawObject(Sat,orbitS,15,"#b6cbce");
-	drawObject(Ur,orbitU,12,"#fcfcf6");
-	drawObject(Nep,orbitN,11,"#3e649b");
-	drawObject(Pl,orbitP,3,"#3e649b");
+	drawObject(mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
+	drawObject(venus,orbitV,7,"#b2cbd1",'Venus',angularM[1]);
+	drawObject(earth,orbitE,8,"#a9ce95",'Earth',angularM[2]);
+	drawObject(mars,orbitMa,5,"#f4b388",'Mars',angularM[3]);
+	drawObject(Jup,orbitJ,17,"#587bb0",'Jupiter',angularM[4]);
+	drawObject(Sat,orbitS,15,"#b6cbce",'Saturn',angularM[5]);
+	drawObject(Ur,orbitU,12,"#fcfcf6",'Uranus',angularM[6]);
+	drawObject(Nep,orbitN,11,"#3e649b",'Neptune',angularM[7]);
+	drawObject(Pl,orbitP,3,"#3e649b",'Pluto',angularM[8]);
 	
+	
+	//界面与文字
 	var t1 = new zrender.Text({
         style: {
             text: 'Inner Solar System',
@@ -265,13 +382,30 @@
             text: 'Institute of Physics,Yipoils',
             textAlign: 'right',
             textVerticalAlign: 'bottom',
-            fontSize: 20,
+            fontSize: 15,
             fontFamily: 'Lato',
             //fontWeight: 'bolder',
             textFill: '#fff',
             //blend: 'lighten'
         },
         position: [w - 15,h - 10]
+    });
+    map.add(t1);
+	
+	var nowDate = new Date();
+	nowDate.setFullYear(2218);	
+	var t1 = new zrender.Text({
+        style: {
+            text:" Time: "+nowDate,
+            textAlign: 'left',
+            textVerticalAlign: 'bottom',
+            fontSize: 15,
+            fontFamily: 'Lato',
+            //fontWeight: 'bolder',
+            textFill: '#fff',
+            //blend: 'lighten'
+        },
+        position: [0,h-10]
     });
     map.add(t1);
 	
@@ -296,15 +430,8 @@
 /*
 var map=document.getElementById("main");
 
-//界面与文字
-var text1=map.getContext("2d");
 
-var nowDate = new Date();
-nowDate.setFullYear(2218);
 
-text1.font="20px Verdana";
-text1.fillStyle="#ffffff"
-text1.fillText(" Time: "+nowDate,10,690);
 
 
 var dis=Math.sqrt((orbitE[0]-orbitM[0])*(orbitE[0]-orbitM[0])+(orbitE[1]-orbitM[1])*(orbitE[1]-orbitM[1])+(orbitE[2]-orbitM[2])*(orbitE[2]-orbitM[2]));
