@@ -95,18 +95,14 @@ function getOrbit(para,teph){
 	var ele = new Elements(para,t);
 	var orbit=new Array();
 	var postion=getPostion(ele);
-	orbit[0] =postion[0];
-	orbit[1] =postion[1];
-	orbit[2] =postion[2];
+	orbit[0] =(postion);
 	
 	for (var i=1;i<300;i++)
 	{
 		t=t-1/36525;
 		var ele=new Elements(para,t);
 		var postion=getPostion(ele);
-		orbit[3*i] =postion[0];
-	    orbit[3*i+1] =postion[1];
-	    orbit[3*i+2] =postion[2];
+		orbit[i] =(postion);
 	}
 	return orbit;
 }
@@ -139,6 +135,7 @@ var positionN = getPostion(eleN);
 var eleP=new Elements(paraP,time);
 var positionP = getPostion(eleP);
 
+orbitM = getOrbit(paraM,time);
 
 document.write("******"+"Time "+"******"+"<br/>");
 document.write(time+"<br/>");
