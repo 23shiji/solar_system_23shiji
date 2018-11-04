@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<!-- saved from url=(0039)http://wangdake.xyz/Solar%20system.html -->
-<html>
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- saved from url=(0037)http://wangdake.xyz/solar_system.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
 	<title>Solar system</title>
 	<script src="./dist/zrender.min.js"></script>
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         html, body, #main {
             width: 100%;
@@ -33,6 +32,8 @@
 	var paraU = new Array(19.18797948,  0.04685740,  0.77298127,  314.20276625,172.43404441, 73.96250215, -0.00020455, -0.00001550, -0.00180155,  428.49512595,  0.09266985,  0.05739699,0.00058331,-0.97731848, 0.17689245, 7.67025000);
 	var paraN = new Array(30.06952752,  0.00895439,  1.77005520,  304.22289287, 46.68158724,131.78635853,  0.00006447,  0.00000818,  0.00022400,  218.46515314,  0.01009938, -0.00606302,-0.00041348, 0.68346318,-0.10162547, 7.67025000);
 	var paraP = new Array(39.48686035,  0.24885238, 17.14104260,  238.96535011,224.09702598,110.30167986,  0.00449751,  0.00006016,  0.00000501,  145.18042903, -0.00968827, -0.00809981,-0.01262724,0,0,0);		 
+	var paraY = new Array(2.23597, 0.0259, 0, 0,0,0, 0, 0, 0,10778.4431 , 0, 0,0,0,0,0);		 
+	var paraSG = new Array(415.8289,0, 0, 0,0,0, 0, 0, 0,4.2455161 , 0, 0,0,0,0,0);		
 
 
 	var Degree=Math.PI/180;
@@ -42,7 +43,7 @@
 
 
 	//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
-	time=(d.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000)+2;
+	time=(d.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000)+2+00/36525;
 
 	//定义轨道元素对象。输入参数和时间，返回轨道元素。
 	function Elements(para,teph){
@@ -95,11 +96,13 @@
 	}
 
 
-	//计算过去300地球天内每10天的位置
+	//计算orbitCount个点,平均在天体半个周期
 	//输入天体参数与时间，反回数组顺序为x,y,z。
 	var orbitCount=50;
 	function getOrbit(para,teph){
 		var t=teph;
+		//var delta = 360 / para[9] / (orbitCount-1);
+		var delta = 4 / 36525;
 		var ele = new Elements(para,t);
 		var orbit=new Array(orbitCount);
 		var postion=getPostion(ele);
@@ -107,7 +110,7 @@
 		
 		for (var i=1;i<orbitCount;i++)
 		{
-			t=t - 4 / 36525;
+			t=t - delta;
 			var ele=new Elements(para,t);
 			var postion=getPostion(ele);
 			orbit[i] =postion;
@@ -126,7 +129,8 @@
 	orbitU = getOrbit(paraU,time);
 	orbitN = getOrbit(paraN,time);
 	orbitP = getOrbit(paraP,time);
-
+	orbitY = getOrbit(paraY,time);
+	orbitSG = getOrbit(paraSG,time);
 	</script>
 	
 </head>
@@ -134,7 +138,7 @@
 
 <body>
 
-<div id="main"  style="background: #2b3e5e"></div>
+<div id="main" style="background: rgb(43, 62, 94); -webkit-tap-highlight-color: transparent; user-select: none;"><div style="position: relative; overflow: hidden; width: 1347px; height: 658px; padding: 0px; margin: 0px; border-width: 0px; cursor: default;"><canvas data-zr-dom-id="zr_0" width="1347" height="658" style="position: absolute; left: 0px; top: 0px; width: 1347px; height: 658px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div></div>
 
 <script>
 	// 初始化zrender
@@ -144,9 +148,10 @@
     	var h = map.getHeight();
 	var rotation=-Math.PI / 6;
 	//角动量,单位为天文单位*千米每秒set自身质量为1
-	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005]
+	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005,44.58571,607.38989];
 	
-	var solarSystem = new zrender.Group();
+	var solarSystem = new zrender.Group({origin:[w / 2,h / 2]});
+	//solarSystem.attr('origin',[0.7,0.7]);
 	var sun = new zrender.Group();
 	var mercury = new zrender.Group();
 	var venus = new zrender.Group();
@@ -157,21 +162,26 @@
 	var Ur = new zrender.Group();
 	var Nep = new zrender.Group();
 	var Pl = new zrender.Group();
+	var Y = new zrender.Group();
+	var SG = new zrender.Group();
+	
+	var logeY = new zrender.Image();
 	var goals = new zrender.Group();
 	var tmpText= new zrender.Text();
 	var lineGoals=new zrender.Line();
+		
 	
 	//将太阳系位置转换为画布坐标
 	function trP(posxy) {
 		var pos1=new Array(2);
 		var pos=new Array(2);
 		var dis=Math.sqrt(posxy[0]*posxy[0]+posxy[1]*posxy[1]);
-		//pos[0]=posxy[0]/4*700+400;
-		//pos[1]=posxy[1]/4*700+350;
+		//pos[0]=posxy[0] / 5*h+w / 2;
+		//pos[1]=posxy[1] / 5*h+h / 2;
 		//对数坐标
 		if(dis!=0){
-			//pos1[0]=posxy[0] / dis*Math.log(Math.sqrt(dis)+0.6) / 2*h;
-			//pos1[1]=posxy[1] / dis*Math.log(Math.sqrt(dis)+0.6) / 2*h;
+			//pos1[0]=posxy[0] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
+			//pos1[1]=posxy[1] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
 			pos1[0]=posxy[0] / dis*Math.log(dis+1) / 3.5*h;
 			pos1[1]=posxy[1] / dis*Math.log(dis+1) / 3.5*h;
 		}
@@ -180,7 +190,7 @@
 			pos1[1]=0;
 		}
 		pos[0]=pos1[0]*Math.cos(rotation)- pos1[1]*Math.sin(rotation)+w / 2;
-		pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+h / 3;
+		pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+h / 2;
 		return pos;
 	}
 	
@@ -203,7 +213,8 @@
 	        },
 	        style: {
 	            fill: color,
-	            //stroke: '#f3dc8a'
+	            stroke: color,
+				strokeNoScale:true
 	        },
 			z:1,//鼠标落下动画
 			onmouseover: function () {
@@ -237,9 +248,9 @@
 				smooth: 'spline'
 			},	
 		    style: {
-		        //fill: '#fff',
 		        stroke: color,
-				lineWidth:2
+				lineWidth:2,
+				//strokeNoScale:true
 		    },
 			z:0
 		});
@@ -283,12 +294,19 @@
 	        .start();
 		
 		//	名称与速度信息
+		var infTextSize = 15;
+		if(solarSystem.scale[0]==1){
+			 infTextSize = 15;
+		}
+		else{
+			 infTextSize = 25;
+		}
 		var infText= new zrender.Text({
 			style:{
 				text:planetName+' '+(aM / distance(orbit[0],[0,0,0])).toFixed(2)+'km/s',
 				textAlign: 'left',
 	            textVerticalAlign: 'top',
-	            fontSize: 15,
+	            fontSize: infTextSize,
 	            fontFamily: 'Lato',
 	            textFill: '#fff'
 			},
@@ -297,8 +315,10 @@
 		});
 		goals.add(goal);
 		goals.add(infText);
-		map.add(goals);
+		solarSystem.add(goals);
 		
+		
+		//groupName.childAt(1).shape.cx,
 		//alert(goals.childCount());
 		//判断用户操作
 		if(goals.childCount()==4){
@@ -317,16 +337,11 @@
 				},
 				slient:true
 			});
-			lineGoals.animate('shape')
-	        .when(1000, {
-	            percent: 1
-	        })
-	        .start();
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
 			tmpText = new zrender.Text({
 				style:{
-					text:'Distance: '+disG.toFixed(2)+'au\nTime:'+(disG / 0.137).toFixed(0)+'days',
+					text:'Distance: '+disG.toFixed(2)+'au\nTime: '+(disG * 5.77).toFixed(0)+'days',
 					textAlign: 'left',
 		            textVerticalAlign: 'top',
 		            fontSize: 20,
@@ -336,13 +351,20 @@
 				position:[w-200,0],
 				silent:true
 			});
+			lineGoals.animate('shape')
+		        .when(disG*100, {
+		            percent: 1
+		        })
+		        .start();
 			map.add(tmpText);
 		}
-		map.add(lineGoals);
+		//map.add(lineGoals);
+		solarSystem.add(lineGoals);
 		if(goals.childCount()>4){
 			lineGoals.attr('invisible',true);
 			tmpText.attr('invisible',true);
 			goals.removeAll();
+			goals.attr('position',[0, 0]);
 			drawLine(groupName,orbit,radius,planetName,aM)
 		}
 	}
@@ -360,11 +382,15 @@
 	drawObject(Sat,orbitS,15,"#b6cbce",'Saturn',angularM[5]);
 	drawObject(Ur,orbitU,12,"#fcfcf6",'Uranus',angularM[6]);
 	drawObject(Nep,orbitN,11,"#3e649b",'Neptune',angularM[7]);
-	drawObject(Pl,orbitP,3,"#3e649b",'Pluto',angularM[8]);
+	drawObject(Pl,orbitP,3,"#6d6d6d",'Pluto',angularM[8]);
+	drawObject(Y,orbitY,3,"#fff",'Yipolis',angularM[9]);
+	drawObject(SG,orbitSG,3,"#000",'Porta Edge',angularM[10]);
 	
+	Y.on('dblclick',function(){
+		 window.location.href="https://23shiji.github.io/yipolis-map/"; 
+	});
 	
-	//界面与文字
-	var t1 = new zrender.Text({
+	var title = new zrender.Text({
         style: {
             text: 'Inner Solar System',
             textAlign: 'left',
@@ -377,7 +403,43 @@
         },
         position: [10,10]
     });
-    map.add(t1);
+    map.add(title);
+	
+	sun.on('click',function(){
+		if(solarSystem.scale[0]==1){
+			if(goals.childCount()==2){
+				goals.childAt(1).attr('style',{ fontSize: 25});
+			}
+			else if(goals.childCount()==4){
+				goals.childAt(1).attr('style',{ fontSize: 25});
+				goals.childAt(3).attr('style',{ fontSize: 25});	
+			}
+			title.attr('style',{text: 'Solar System'});
+			solarSystem.attr('scale',[0.5,0.5]);
+		}
+		else{
+			if(goals.childCount()==2){
+				goals.childAt(1).attr('style',{ fontSize: 15});
+			}
+			else if(goals.childCount()==4){
+				goals.childAt(1).attr('style',{ fontSize: 15});
+				goals.childAt(3).attr('style',{ fontSize: 15});	
+			}
+			title.attr('style',{text: 'Inner Solar System'});
+			solarSystem.attr('scale',[1,1]);
+		}
+	});
+	/*sun.on('dblclick',function(){
+		if(solarSystem.scale[0]==1||solarSystem.scale[0]==0.07){
+			title.attr('style',{text: 'Outer Solar System'});
+			solarSystem.attr('scale',[0.3,0.3]);
+		}
+		else{
+			title.attr('style',{text: 'Inner Solar System'});
+			solarSystem.attr('scale',[1,1]);
+		}
+	});*/
+	
 	
 	var t1 = new zrender.Text({
         style: {
@@ -411,46 +473,30 @@
     });
     map.add(t1);
 	
-	
-	
-	
-	/*
-	var solarSystemObject=solarSystem.children()
-	 solarSystemObject[1].animate('shape', true)
-        .when(1000, {
-            r: 20
-        })
-        .when(2000, {
-            r: 10
-        })
-        .start();*/
-	
-	
 	map.add(solarSystem);
-		
 	
-/*
-var map=document.getElementById("main");
+	logeY = new zrender.Image({
+        style: {
+        		image:'https://23shiji.github.io/yipolis-map/map/plugins/logo/logo.svg',
+			height:100,
+			width:71.5,
+			x:w-90,
+			y:h - 125,
+			z:0.81,
+			//opacity:0.5//bug  https://github.com/ecomfe/zrender/issues/379
+        }/*,
+		onmouseover: function () {
+        		logeY.attr('style',{opacity:1});
+        },
+		onmouseout: function () {
+        		logeY.attr('style',{opacity:0.5});
+        }*/
+    });
+	logeY.on('click',function(){
+		 window.open("http://wiki.23shiji.net/wiki/index.php/%E9%A9%BF%E5%AE%81%E5%85%B1%E5%92%8C%E5%9B%BD"); 
+	});
+    map.add(logeY);	
 
-
-
-
-
-var dis=Math.sqrt((orbitE[0]-orbitM[0])*(orbitE[0]-orbitM[0])+(orbitE[1]-orbitM[1])*(orbitE[1]-orbitM[1])+(orbitE[2]-orbitM[2])*(orbitE[2]-orbitM[2]));
-text1.font="15px Verdana";
-text1.fillStyle="#ffffff"
-text1.fillText("Earth-Mercury distance: "+dis.toFixed(5)+"AU",10,80);
-
-var line=map.getContext("2d");
-line.beginPath();
-line.moveTo(trP(orbitE)[0],trP(orbitE)[1]) ;
-line.lineTo(trP(orbitM)[0],trP(orbitM)[1]);
-line.lineWidth=2;
-line.strokeStyle = "#ffffff";
-line.stroke();
-*/
 </script>
-
-
-
-</body></html>
+</body>
+</html>
