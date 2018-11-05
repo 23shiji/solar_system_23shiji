@@ -1,0 +1,28 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "启动 Chrome 并打开 localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+        },
+        {
+            "name": "使用本机 Chrome 调试",
+            "type": "chrome",
+            "request": "launch",
+             "file": "${workspaceRoot}/index.html",
+        //  "url": "http://mysite.com/index.html", //使用外部服务器时,请注释掉 file, 改用 url, 并将 useBuildInServer 设置为 false "http://mysite.com/index.html
+            "runtimeExecutable": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe", // 改成您的 Chrome 安装路径
+            "sourceMaps": true,
+            "webRoot": "${workspaceRoot}",
+        //  "preLaunchTask":"build",
+            "userDataDir":"${tmpdir}",
+            "port":5433
+        }
+    ]
+}
