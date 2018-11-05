@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0037)http://wangdake.xyz/solar_system.html -->
 <html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	
-	<title>Solar system</title>
+	<title>23世纪太阳系</title>
 	<script src="./dist/zrender.min.js"></script>
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -169,8 +168,23 @@
 	var goals = new zrender.Group();
 	var tmpText= new zrender.Text();
 	var lineGoals=new zrender.Line();
-		
 	
+	//信息文字
+	tmpText = new zrender.Text({
+		style:{
+			text:'',
+			textAlign: 'right',
+			textVerticalAlign: 'top',
+			fontSize: 15,
+			fontFamily: 'Lato',
+			textFill: '#fff'
+		},
+		position:[w-10,10],
+		silent:true,
+		invisible:true
+	});
+	map.add(tmpText);
+
 	//将太阳系位置转换为画布坐标
 	function trP(posxy) {
 		var pos1=new Array(2);
@@ -314,6 +328,8 @@
 			position:[groupName.childAt(1).shape.cx+radius*1.7,groupName.childAt(1).shape.cy+radius*1.7],
 			silent:true
 		});
+		tmpText.attr('invisible',false);
+		tmpText.attr('style',{text:'天体名称：'+planetName+' 相对太阳：'+distance(orbit[0],[0,0,0]).toFixed(2)+'au  '});
 		goals.add(goal);
 		goals.add(infText);
 		solarSystem.add(goals);
@@ -341,24 +357,13 @@
 			});
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
-			tmpText = new zrender.Text({
-				style:{
-					text:'Distance: '+disG.toFixed(2)+'au\nTime: '+(disG * 5.77).toFixed(0)+'days',
-					textAlign: 'left',
-		            textVerticalAlign: 'top',
-		            fontSize: 20,
-		            fontFamily: 'Lato',
-		            textFill: '#fff'
-				},
-				position:[w-200,0],
-				silent:true
-			});
+			tmpText.attr('invisible',false);
+			tmpText.attr('style',{text:tmpText.style.text+'\n航线距离：'+disG.toFixed(2)+'au 预计时间：'+(disG * 5.77).toFixed(0)+'天（300km/s）'});
 			lineGoals.animate('shape')
 		        .when(disG*100, {
 		            percent: 1
 		        })
 		        .start();
-			map.add(tmpText);
 		}
 		//map.add(lineGoals);
 		solarSystem.add(lineGoals);
@@ -398,7 +403,7 @@
 	
 	var title = new zrender.Text({
         style: {
-            text: 'Inner Solar System',
+            text: '内太阳系',
             textAlign: 'left',
             textVerticalAlign: 'top',
             fontSize: 40,
@@ -421,7 +426,7 @@
 				goals.childAt(1).attr('style',{ fontSize: 25});
 				goals.childAt(3).attr('style',{ fontSize: 25});	
 			}
-			title.attr('style',{text: 'Solar System'});
+			title.attr('style',{text: '太阳系'});
 			solarSystem.attr('scale',[0.5,0.5]);
 		}
 		else{
@@ -432,7 +437,7 @@
 				goals.childAt(1).attr('style',{ fontSize: 15});
 				goals.childAt(3).attr('style',{ fontSize: 15});	
 			}
-			title.attr('style',{text: 'Inner Solar System'});
+			title.attr('style',{text: '内太阳系'});
 			solarSystem.attr('scale',[1,1]);
 		}
 	});
@@ -450,7 +455,7 @@
 	
 	var t1 = new zrender.Text({
         style: {
-            text: '©2197-2218 IOP-Yipoils,all rights reserved',
+            text: '©2197-2218 驿宁天文台,all rights reserved',
             textAlign: 'right',
             textVerticalAlign: 'bottom',
             fontSize: 15,
@@ -468,7 +473,7 @@
 	nowDate.setFullYear(2218);	
 	var t1 = new zrender.Text({
         style: {
-            text:" Time: "+nowDate,
+            text:" 当前时间: "+nowDate,
             textAlign: 'left',
             textVerticalAlign: 'bottom',
             fontSize: 15,
