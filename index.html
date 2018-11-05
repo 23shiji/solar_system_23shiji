@@ -153,10 +153,10 @@
 	var solarSystem = new zrender.Group({origin:[w / 2,h / 2]});
 	//solarSystem.attr('origin',[0.7,0.7]);
 	var sun = new zrender.Group();
-	var mercury = new zrender.Group();
-	var venus = new zrender.Group();
-	var earth = new zrender.Group();
-	var mars = new zrender.Group();
+	var Mercury = new zrender.Group();
+	var Venus = new zrender.Group();
+	var Earth = new zrender.Group();
+	var Mars = new zrender.Group();
 	var Jup = new zrender.Group();
 	var Sat = new zrender.Group();
 	var Ur = new zrender.Group();
@@ -182,8 +182,8 @@
 		if(dis!=0){
 			//pos1[0]=posxy[0] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
 			//pos1[1]=posxy[1] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
-			pos1[0]=posxy[0] / dis*Math.log(dis+1) / 3.5*h;
-			pos1[1]=posxy[1] / dis*Math.log(dis+1) / 3.5*h;
+			pos1[0]=posxy[0] / dis*Math.log(dis+1) / 4*h;
+			pos1[1]=posxy[1] / dis*Math.log(dis+1) / 4*h;
 		}
 		else{
 			pos1[0]=0;
@@ -252,7 +252,7 @@
 				lineWidth:2,
 				//strokeNoScale:true
 		    },
-			z:0
+			z:0.9
 		});
 		groupName.add(orbitLine);
 	}
@@ -282,7 +282,8 @@
 				stroke:'#fff',
 				fill: 'transparent'
 			},
-			silent:true
+			silent:true,
+			z:0.8
 		});
 		goal.animate('shape', true)
 	        .when(1000, {
@@ -335,7 +336,8 @@
 					lineWidth:2,
 					stroke:'#fff'
 				},
-				slient:true
+				slient:true,
+				z:0.8
 			});
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
@@ -374,10 +376,10 @@
 	solarSystem.add(sun);
 	//alert(trP(sunPosition));
 	
-	drawObject(mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
-	drawObject(venus,orbitV,7,"#b2cbd1",'Venus',angularM[1]);
-	drawObject(earth,orbitE,8,"#a9ce95",'Earth',angularM[2]);
-	drawObject(mars,orbitMa,5,"#f4b388",'Mars',angularM[3]);
+	drawObject(Mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
+	drawObject(Venus,orbitV,7,"#b2cbd1",'Venus',angularM[1]);
+	drawObject(Earth,orbitE,8,"#a9ce95",'Earth',angularM[2]);
+	drawObject(Mars,orbitMa,5,"#f4b388",'Mars',angularM[3]);
 	drawObject(Jup,orbitJ,17,"#587bb0",'Jupiter',angularM[4]);
 	drawObject(Sat,orbitS,15,"#b6cbce",'Saturn',angularM[5]);
 	drawObject(Ur,orbitU,12,"#fcfcf6",'Uranus',angularM[6]);
@@ -390,6 +392,10 @@
 		 window.location.href="https://23shiji.github.io/yipolis-map/"; 
 	});
 	
+	Mars.on('dblclick',function(){
+		 window.location.href="https://23shiji.github.io/mars-map/"; 
+	});
+	
 	var title = new zrender.Text({
         style: {
             text: 'Inner Solar System',
@@ -399,6 +405,7 @@
             fontFamily: 'Lato',
             //fontWeight: 'bolder',
             textFill: '#fff',
+            z:2
             //blend: 'lighten'
         },
         position: [10,10]
@@ -443,13 +450,14 @@
 	
 	var t1 = new zrender.Text({
         style: {
-            text: 'Institute of Physics,Yipoils',
+            text: '©2197-2218 IOP-Yipoils,all rights reserved',
             textAlign: 'right',
             textVerticalAlign: 'bottom',
             fontSize: 15,
             fontFamily: 'Lato',
             //fontWeight: 'bolder',
             textFill: '#fff',
+            z:2
             //blend: 'lighten'
         },
         position: [w - 15,h - 10]
@@ -467,6 +475,7 @@
             fontFamily: 'Lato',
             //fontWeight: 'bolder',
             textFill: '#fff',
+            z:2
             //blend: 'lighten'
         },
         position: [0,h-10]
@@ -482,7 +491,7 @@
 			width:71.5,
 			x:w-90,
 			y:h - 125,
-			z:0.81,
+			z:0
 			//opacity:0.5//bug  https://github.com/ecomfe/zrender/issues/379
         }/*,
 		onmouseover: function () {
