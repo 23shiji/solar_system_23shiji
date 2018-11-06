@@ -137,14 +137,13 @@
 
 <body>
 
-<div id="main" style="background: rgb(43, 62, 94); -webkit-tap-highlight-color: transparent; user-select: none;"><div style="position: relative; overflow: hidden; width: 1347px; height: 658px; padding: 0px; margin: 0px; border-width: 0px; cursor: default;"><canvas data-zr-dom-id="zr_0" width="1347" height="658" style="position: absolute; left: 0px; top: 0px; width: 1347px; height: 658px; user-select: none; -webkit-tap-highlight-color: rgba(0, 0, 0, 0); padding: 0px; margin: 0px; border-width: 0px;"></canvas></div></div>
-
+<div id="main" style="background: rgb(43, 62, 94); "></div>
 <script>
 	// 初始化zrender
     var main = document.getElementById('main');
-    var map = zrender.init(main);
+    var map = zrender.init(main,{renderer:'svg'});
 	var w = map.getWidth();
-    	var h = map.getHeight();
+    var h = map.getHeight();
 	var rotation=-Math.PI / 6;
 	//角动量,单位为天文单位*千米每秒set自身质量为1
 	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005,44.58571,607.38989];
@@ -181,9 +180,28 @@
 		},
 		position:[w-10,10],
 		silent:true,
-		invisible:true
+		invisible:true,
+		z:2
 	});
 	map.add(tmpText);
+
+	//连线
+	lineGoals= new zrender.Line({
+		shape:{
+			x1:-10,
+			y1:-10,
+			x2:-10,
+			y2:-10,
+			percent:0
+		},
+		style:{
+			lineWidth:2,
+			stroke:'#fff'
+		},
+		slient:true,
+		invisible:true,
+		z:0.5//
+	});
 
 	//将太阳系位置转换为画布坐标
 	function trP(posxy) {
@@ -297,7 +315,7 @@
 				fill: 'transparent'
 			},
 			silent:true,
-			z:0.8
+			z:0.5
 		});
 		goal.animate('shape', true)
 	        .when(1000, {
@@ -326,7 +344,8 @@
 	            textFill: '#fff'
 			},
 			position:[groupName.childAt(1).shape.cx+radius*1.7,groupName.childAt(1).shape.cy+radius*1.7],
-			silent:true
+			silent:true,
+			z:2
 		});
 		tmpText.attr('invisible',false);
 		tmpText.attr('style',{text:'天体名称：'+planetName+' 相对太阳：'+distance(orbit[0],[0,0,0]).toFixed(2)+'au  '});
@@ -340,21 +359,11 @@
 		//判断用户操作
 		if(goals.childCount()==4){
 			//生成路线和路线信息
-			lineGoals= new zrender.Line({
-				shape:{
-					x1:goals.childAt(0).shape.cx,
-					y1:goals.childAt(0).shape.cy,
-					x2:goals.childAt(2).shape.cx,
-					y2:goals.childAt(2).shape.cy,
-					percent:0
-				},
-				style:{
-					lineWidth:2,
-					stroke:'#fff'
-				},
-				slient:true,
-				z:0.8
-			});
+			lineGoals.attr('invisible',false);
+			lineGoals.attr('shape',{x1:goals.childAt(0).shape.cx,
+			y1:goals.childAt(0).shape.cy,
+			x2:goals.childAt(2).shape.cx,
+			y2:goals.childAt(2).shape.cy,percent:0});
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
 			tmpText.attr('invisible',false);
@@ -365,7 +374,7 @@
 		        })
 		        .start();
 		}
-		//map.add(lineGoals);
+
 		solarSystem.add(lineGoals);
 		if(goals.childCount()>4){
 			lineGoals.attr('invisible',true);
@@ -496,8 +505,8 @@
 			width:71.5,
 			x:w-90,
 			y:h - 125,
-			z:0
-			//opacity:0.5//bug  https://github.com/ecomfe/zrender/issues/379
+			z:0.1//,
+			//opacity:0.5 //bug  https://github.com/ecomfe/zrender/issues/379
         }/*,
 		onmouseover: function () {
         		logeY.attr('style',{opacity:1});
