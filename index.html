@@ -372,11 +372,12 @@
 		        .when(disG*100, {
 		            percent: 1
 		        })
-		        .start();
+				.start();
 		}
 
 		solarSystem.add(lineGoals);
 		if(goals.childCount()>4){
+			lineGoals.stopAnimation();
 			lineGoals.attr('invisible',true);
 			lineGoals.attr('shape',{percent:0});
 			tmpText.attr('invisible',true);
