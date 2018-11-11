@@ -307,7 +307,8 @@
         			r: radius*1.7,
 				xt:orbit[0][0],//储存天体实际位置信息到元素里面
 				yt:orbit[0][1],
-				zt:orbit[0][2]
+				zt:orbit[0][2],
+				cv:aM / distance(orbit[0],[0,0,0])
 			},
 			style:{
 				lineWidth:2,
@@ -367,7 +368,7 @@
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
 			tmpText.attr('invisible',false);
-			tmpText.attr('style',{text:tmpText.style.text+'\n航线距离：'+disG.toFixed(2)+'au 预计时间：'+(disG * 5.77).toFixed(0)+'天（300km/s）'});
+			tmpText.attr('style',{text:tmpText.style.text+'\n航线距离：'+disG.toFixed(2)+'au 预计时间：'+(disG * 5.77).toFixed(0)+'天(300km/s) \n'+'通讯延时：'+(disG * 498.667/60).toFixed(0)+'分钟  '});
 			lineGoals.animate('shape')
 		        .when(disG*100, {
 		            percent: 1
@@ -392,6 +393,7 @@
 	solarSystem.add(sun);
 	//alert(trP(sunPosition));
 	
+	//绘制主要天体
 	drawObject(Mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
 	drawObject(Venus,orbitV,7,"#b2cbd1",'Venus',angularM[1]);
 	drawObject(Earth,orbitE,8,"#a9ce95",'Earth',angularM[2]);
@@ -404,6 +406,7 @@
 	drawObject(Y,orbitY,3,"#fff",'Yipolis',angularM[9]);
 	drawObject(SG,orbitSG,3,"#000",'Porta Edge',angularM[10]);
 	
+	//双击进入地图
 	Y.on('dblclick',function(){
 		 window.location.href="https://23shiji.github.io/yipolis-map/"; 
 	});
@@ -412,6 +415,7 @@
 		 window.location.href="https://23shiji.github.io/mars-map/"; 
 	});
 	
+	//显示地图标题
 	var title = new zrender.Text({
         style: {
             text: '内太阳系',
@@ -428,6 +432,7 @@
     });
     map.add(title);
 	
+	//点击太阳缩放
 	sun.on('click',function(){
 		if(solarSystem.scale[0]==1){
 			if(goals.childCount()==2){
