@@ -5,6 +5,10 @@
 	
 	<title>23世纪太阳系</title>
 	<script src="./dist/zrender.min.js"></script>
+
+	<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
 	<meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         html, body, #main {
@@ -42,14 +46,7 @@
 
 
 	var Degree=Math.PI/180;
-	var a = 1;
-	var time ;
-	var d = new Date();
-
-
-	//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
-	time=(d.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000)+2+00/36525;
-
+	
 	//定义轨道元素对象。输入参数和时间，返回轨道元素。
 	function Elements(para,teph){
 		//var t = (teph-2451545.0)/36525;//当输入时间为儒略日是启用。
@@ -123,19 +120,6 @@
 		return orbit;
 	}
 
-
-	//内太阳系轨道
-	orbitM = getOrbit(paraM,time);
-	orbitV = getOrbit(paraV,time);
-	orbitE = getOrbit(paraE,time);
-	orbitMa = getOrbit(paraMa,time);
-	orbitJ = getOrbit(paraJ,time);
-	orbitS = getOrbit(paraS,time);
-	orbitU = getOrbit(paraU,time);
-	orbitN = getOrbit(paraN,time);
-	orbitP = getOrbit(paraP,time);
-	orbitY = getOrbit(paraY,time);
-	orbitSG = getOrbit(paraSG,time);
 	</script>
 	
 </head>
@@ -144,18 +128,18 @@
 <body>
 
 <div id="main" style="background: rgb(43, 62, 94); "></div>
+
 <script>
 	// 初始化zrender
     var main = document.getElementById('main');
     var map = zrender.init(main,{renderer:'svg'});
 	var w = map.getWidth();
     var h = map.getHeight();
-	var rotation=-Math.PI / 6;
+	var rotation=Math.PI * 2 / 3;
 	//角动量,单位为天文单位*千米每秒set自身质量为1
 	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005,44.58571,192.00846];
 	
 	var solarSystem = new zrender.Group({origin:[w / 2,h / 2]});
-	//solarSystem.attr('origin',[0.7,0.7]);
 	var sun = new zrender.Group();
 	var Mercury = new zrender.Group();
 	var Venus = new zrender.Group();
@@ -174,7 +158,7 @@
 	var tmpText= new zrender.Text();
 	var lineGoals=new zrender.Line();
 	
-	//信息文字
+	//轨道信息文字
 	tmpText = new zrender.Text({
 		style:{
 			text:'',
@@ -193,6 +177,8 @@
 				window.open("https://23shiji.github.io/calculator_23shiji/");
 			});
 	map.add(tmpText);
+
+
 
 	//连线
 	lineGoals= new zrender.Line({
@@ -221,10 +207,8 @@
 		//pos[1]=posxy[1] / 5*h+h / 2;
 		//对数坐标
 		if(dis!=0){
-			//pos1[0]=posxy[0] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
-			//pos1[1]=posxy[1] / dis*Math.log(Math.sqrt(dis)+0.6) / 3*h;
-			pos1[0]=posxy[0] / dis*Math.log(dis+1) / 4*h;
-			pos1[1]=posxy[1] / dis*Math.log(dis+1) / 4*h;
+			pos1[1]=posxy[0] / dis*Math.log(dis+1) / 4*h;
+			pos1[0]=posxy[1] / dis*Math.log(dis+1) / 4*h;
 		}
 		else{
 			pos1[0]=0;
@@ -404,6 +388,37 @@
 	drawPlanet(sun,[0,0],25,'#f3dc8a');
 	solarSystem.add(sun);
 	//alert(trP(sunPosition));
+
+	var time;
+	var nowDate = new Date();
+	nowDate.setFullYear(2218);
+	/*接收更改的数据*/
+	var reNewDate = window.sessionStorage.getItem("reNewDate");
+	console.log(nowDate); 
+	if ( reNewDate != "" && reNewDate != null){
+		console.log(reNewDate);
+		reNewDate=window.sessionStorage.getItem("reNewDate");
+		nowDate.setFullYear(reNewDate.split("-")[0]);
+		nowDate.setMonth(parseInt(reNewDate.split("-")[1])-1);
+		nowDate.setDate(reNewDate.split("-")[2]);
+		console.log(nowDate);   
+	}
+	//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
+	time=(nowDate.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000); 
+	
+
+	//内太阳系轨道
+	orbitM = getOrbit(paraM,time);
+	orbitV = getOrbit(paraV,time);
+	orbitE = getOrbit(paraE,time);
+	orbitMa = getOrbit(paraMa,time);
+	orbitJ = getOrbit(paraJ,time);
+	orbitS = getOrbit(paraS,time);
+	orbitU = getOrbit(paraU,time);
+	orbitN = getOrbit(paraN,time);
+	orbitP = getOrbit(paraP,time);
+	orbitY = getOrbit(paraY,time);
+	orbitSG = getOrbit(paraSG,time);
 	
 	//绘制主要天体
 	drawObject(Mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
@@ -426,6 +441,7 @@
 	Mars.on('dblclick',function(){
 		 window.location.href="https://23shiji.github.io/mars-map/"; 
 	});
+
 	
 	//显示地图标题
 	var title = new zrender.Text({
@@ -498,8 +514,7 @@
     });
     map.add(t1);
 	
-	var nowDate = new Date();
-	nowDate.setFullYear(2218);	
+		
 	var t1 = new zrender.Text({
         style: {
             text:" 当前时间: "+nowDate,
@@ -558,5 +573,44 @@
     map.add(logeY);	
 
 </script>
+
+<div id="UI">
+	日期<input type="date" v-model="getDate">
+	<button v-on:click="reNew">
+		跳转
+	</button>
+</div>
+
+<script>
+function getNowFormatDate() {
+        var date = new Date();
+        var seperator1 = "-";
+        var year = date.getFullYear()+200;
+        var month = date.getMonth() + 1;
+        var strDate = date.getDate();
+        if (month >= 1 && month <= 9) {
+            month = "0" + month;
+        }
+        if (strDate >= 0 && strDate <= 9) {
+            strDate = "0" + strDate;
+        }
+        var currentdate = year + seperator1 + month + seperator1 + strDate;
+        return currentdate;
+    }
+var uiVM = new Vue({
+	el:'#UI',
+	data:{
+		getDate:getNowFormatDate()
+	},
+	methods:{
+		reNew:function(){
+			window.sessionStorage.setItem("reNewDate", this.getDate);  
+			console.log(document.getElementById("reNewDate")); 
+			window.location.reload()
+		}
+	}
+})
+</script>
+
 </body>
 </html>
