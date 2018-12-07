@@ -100,16 +100,23 @@
 
 	//计算orbitCount个点,平均在天体半个周期
 	//输入天体参数与时间，反回数组顺序为x,y,z。
-	var orbitCount=50;
 	function getOrbit(para,teph){
+		var orbitCount=50;
 		var t=teph;
-		//var delta = 360 / para[9] / (orbitCount-1);
 		var delta = 4 / 36525;
 		var ele = new Elements(para,t);
 		var orbit=new Array(orbitCount);
 		var postion=getPostion(ele);
 		orbit[0] = (postion);
 		
+		//接收上次改变的数据
+		var fullorbit = window.sessionStorage.getItem("fullorbit");
+		if ( fullorbit == "true"){
+			orbitCount=70;
+			delta = 360 / para[9] / (orbitCount-1);
+		}
+
+
 		for (var i=1;i<orbitCount;i++)
 		{
 			t=t - delta;
@@ -203,16 +210,24 @@
 		var pos1=new Array(2);
 		var pos=new Array(2);
 		var dis=Math.sqrt(posxy[0]*posxy[0]+posxy[1]*posxy[1]);
-		//pos[0]=posxy[0] / 5*h+w / 2;
-		//pos[1]=posxy[1] / 5*h+h / 2;
-		//对数坐标
-		if(dis!=0){
-			pos1[1]=posxy[0] / dis*Math.log(dis+1) / 4*h;
-			pos1[0]=posxy[1] / dis*Math.log(dis+1) / 4*h;
+
+		var realscale = window.sessionStorage.getItem("realscale");
+		//console.log(realscale,typeof(realscale)); 
+		if ( realscale == "true"){
+			//真实坐标
+			pos1[1]=posxy[0] / 5*h;
+			pos1[0]=posxy[1] / 5*h;
 		}
 		else{
-			pos1[0]=0;
-			pos1[1]=0;
+			//对数坐标
+			if(dis!=0){
+				pos1[1]=posxy[0] / dis*Math.log(dis+1) / 4*h;
+				pos1[0]=posxy[1] / dis*Math.log(dis+1) / 4*h;
+			}
+			else{
+				pos1[1]=0;
+				pos1[0]=0;
+			}
 		}
 		pos[0]=pos1[0]*Math.cos(rotation)- pos1[1]*Math.sin(rotation)+w / 2;
 		pos[1]=pos1[1]*Math.cos(rotation)+pos1[0]*Math.sin(rotation)+h / 2;
@@ -394,14 +409,14 @@
 	nowDate.setFullYear(2218);
 	/*接收更改的数据*/
 	var reNewDate = window.sessionStorage.getItem("reNewDate");
-	console.log(nowDate); 
+	//console.log(nowDate); 
 	if ( reNewDate != "" && reNewDate != null){
-		console.log(reNewDate);
+		//console.log(reNewDate);
 		reNewDate=window.sessionStorage.getItem("reNewDate");
 		nowDate.setFullYear(reNewDate.split("-")[0]);
 		nowDate.setMonth(parseInt(reNewDate.split("-")[1])-1);
 		nowDate.setDate(reNewDate.split("-")[2]);
-		console.log(nowDate);   
+		//console.log(nowDate);   
 	}
 	//可能由于时区设置，差20小时。还不知道如何修改。为了计算距离Ｊ2000.0纪元原点的时间（单位世纪）。
 	time=(nowDate.getTime()-Date.parse("Jan 1, 2000"))/(36525*24*3600*1000); 
@@ -575,10 +590,15 @@
 </script>
 
 <div id="UI">
-	日期<input type="date" v-model="getDate">
+	日期：<input type="date" v-model="getDate">
+	<input type="checkbox" id="realscale" v-model="realscale">
+	<label for="realscale">真实比例轨道</label>
+	<input type="checkbox" id="fullorbit" v-model="fullorbit">
+	<label for="realscale">闭合轨道</label>
 	<button v-on:click="reNew">
-		跳转
-	</button>
+		更新
+	</button><br/>
+	太阳系缩放比例：<input type="range" min="10" max="100" v-model.number="solarSystemZoom" v-on:mouseup="reRange">
 </div>
 
 <script>
@@ -600,12 +620,21 @@ function getNowFormatDate() {
 var uiVM = new Vue({
 	el:'#UI',
 	data:{
-		getDate:getNowFormatDate()
+		getDate:getNowFormatDate(),
+		realscale:false,
+		fullorbit:false,
+		solarSystemZoom:10
 	},
 	methods:{
+		reRange:function(){
+			console.log(this.solarSystemZoom); 
+			solarSystem.attr('scale',[1/Math.pow(this.solarSystemZoom,1.5)*Math.pow(10,1.5),1/Math.pow(this.solarSystemZoom,1.5)*Math.pow(10,1.5)]);    
+		},
 		reNew:function(){
-			window.sessionStorage.setItem("reNewDate", this.getDate);  
-			console.log(document.getElementById("reNewDate")); 
+			window.sessionStorage.setItem("reNewDate", this.getDate);
+			window.sessionStorage.setItem("realscale", this.realscale);  
+			window.sessionStorage.setItem("fullorbit", this.fullorbit);
+			//console.log(document.getElementById("reNewDate")); 
 			window.location.reload()
 		}
 	}
