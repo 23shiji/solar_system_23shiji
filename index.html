@@ -181,9 +181,6 @@
 		invisible:true,
 		z:2
 	});
-	tmpText.on('click',function(){
-				window.open("https://23shiji.github.io/calculator_23shiji/");
-			});
 	map.add(tmpText);
 
 
@@ -359,8 +356,8 @@
 		});
 		tmpText.attr('invisible',false);
 		tmpText.attr('style',{text:'天体名称：'+planetName+' \n相对太阳：'+distance(orbit[0],[0,0,0]).toFixed(2)+'au  '});
-		goals.add(goal);
-		goals.add(infText);
+		goals.add(goal);//goals下子图像偶数个为圈和速度信息
+		goals.add(infText);//奇数为右上角文字信息。
 		solarSystem.add(goals);
 		
 		
@@ -376,9 +373,9 @@
 			y2:goals.childAt(2).shape.cy,percent:0});
 			
 			var disG=distance(orbit[0],[goals.childAt(0).shape.xt,goals.childAt(0).shape.yt,goals.childAt(0).shape.zt])
-			tmpText.attr('silent',false);
+			travelVM.disGoal=disG;
 			tmpText.attr('style',{
-				text:tmpText.style.text+'\n航线距离：'+disG.toFixed(2)+'au '+'\n通讯延时：'+(disG * 498.667/60).toFixed(0)+'分钟  \n'+'点击跳转至航行计算'+'   '
+				text:tmpText.style.text+'\n航线距离：'+disG.toFixed(2)+'au '+'\n通讯延时：'+(disG * 498.667/60).toFixed(0)+'分钟  '
 				});
 			lineGoals.animate('shape')
 		        .when(disG*100, {
@@ -506,16 +503,6 @@
 			solarSystem.attr('scale',[1,1]);
 		}
 	});
-	/*sun.on('dblclick',function(){
-		if(solarSystem.scale[0]==1||solarSystem.scale[0]==0.07){
-			title.attr('style',{text: 'Outer Solar System'});
-			solarSystem.attr('scale',[0.3,0.3]);
-		}
-		else{
-			title.attr('style',{text: 'Inner Solar System'});
-			solarSystem.attr('scale',[1,1]);
-		}
-	});*/
 	
 	
 	var t1 = new zrender.Text({
@@ -605,24 +592,25 @@
 		更新
 	</button><br/>
 	太阳系缩放比例：<input type="range" min="10" max="80" v-model.number="solarSystemZoom" v-on:mouseup="reRange">
+	<a>点击太阳可完成太阳系内太阳系切换</a>
 </div>
 
 <script>
 function getNowFormatDate() {
-        var date = new Date();
-        var seperator1 = "-";
-        var year = date.getFullYear()+200;
-        var month = date.getMonth() + 1;
-        var strDate = date.getDate();
-        if (month >= 1 && month <= 9) {
-            month = "0" + month;
-        }
-        if (strDate >= 0 && strDate <= 9) {
-            strDate = "0" + strDate;
-        }
-        var currentdate = year + seperator1 + month + seperator1 + strDate;
-        return currentdate;
-    }
+		var date = new Date();
+		var seperator1 = "-";
+		var year = date.getFullYear()+200;
+		var month = date.getMonth() + 1;
+		var strDate = date.getDate();
+		if (month >= 1 && month <= 9) {
+			month = "0" + month;
+		}
+		if (strDate >= 0 && strDate <= 9) {
+			strDate = "0" + strDate;
+		}
+		var currentdate = year + seperator1 + month + seperator1 + strDate;
+		return currentdate;
+	}
 var uiVM = new Vue({
 	el:'#UI',
 	data:{
@@ -644,6 +632,178 @@ var uiVM = new Vue({
 			window.location.reload()
 		}
 	}
+})
+</script>
+
+<div id="travel">
+	<h2>太阳系星际航行计算器</h2>
+		<p>
+			巡航速度：<input type="number" v-model.number="cruiseS"> 空间节
+			加速次数：<input type="number" v-model.number="accTime"> 次
+			燃料效率：<input type="number" v-model.number="effFual"> %
+			<br/>
+			载荷质量：<input type="number" v-model.number="mass1"> t
+			<br/>
+			加  速  度 ： <input type="number" v-model.number="acc"> m/s^2
+			<br/>
+			目标距离：<input type="number" v-model.number="disGoal"> au
+		</p>
+		<table border="1">
+			<tr>
+				<td>燃料/总重比：{{ fualmass0 }}%</td>
+				<td>总重：{{ mass0 }}t</td>
+			</tr>
+			<tr>
+				<td>燃料/载荷比：{{ fualmass1 }}%</td>
+				<td>燃料质量：{{ mass3 }}t</td>
+			</tr>
+			<tr>
+				<td>平均加速功率：{{ accW }}KW</td>
+			</tr>
+			<tr>
+				<td>单次加速时间：{{ accT }}h</td>
+				<td>旅行总时间：{{ travelT }}天</td>
+				<td>总加速距离占比：{{ asscruiseD }}%</td>
+				
+			</tr>
+			<tr>
+				<td>单次加速距离：{{ accD }}空间里</td>
+				<td>巡航时间：{{ cruiseT }}天</td>
+				<td>总加速时间占比：{{ asscruiseT }}%</td>
+			</tr>
+			<span v-html="answer"></span>
+		</table>
+		<p>
+			注：</br>1空间节被定义为真空中光速的万分之一。(29.97925 千米/秒)</br>
+			1空间里被定义为一空间节·小时。(107925.28488千米)</br>
+			au为<a href="https://baike.baidu.com/item/%E5%A4%A9%E6%96%87%E5%8D%95%E4%BD%8D">天文单位</a></br>
+			以上单位皆可在<a href="https://23shiji.github.io/calculator_23shiji/">空间航行计算器</a>进行转换。
+		</p>
+		<p><a href="http://wiki.23shiji.net/wiki/index.php/帮助:23世纪空间航行计算器">帮助文档</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+<script>
+var travelVM = new Vue({
+el: '#travel',
+data: {
+	cruiseS: 10,
+	accTime: 2,
+	effFual:0.7,
+	mass1:1,
+	mass3:0,
+	acc:10,
+	disGoal:1,
+	fualmass1:0,
+	fualmass0:0.0016711687470179603,
+	mass0:1.0000167119667553,
+	accT:1,
+	accD:1,
+	accW:1,
+	cruiseT:1,
+	asscruiseD:1,
+	asscruiseT:1,
+	travelT:1,
+	answer:''
+},
+watch: {
+	// 如果 `question` 发生改变，这个函数就会运行
+	cruiseS: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	},
+	accTime: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	},
+	effFual: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	},
+	mass1: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	},
+	acc: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	},
+	disGoal: function (newQuestion, oldQuestion) {
+	this.answer = '等待您的输入...'
+	this.debouncedGetAnswer()
+	}
+},
+created: function () {
+	this.getAnswer();
+	// `_.debounce` 是一个通过 Lodash 限制操作频率的函数。
+	// 在这个例子中，我们希望限制访问 yesno.wtf/api 的频率
+	// AJAX 请求直到用户输入完毕才会发出。想要了解更多关于
+	// `_.debounce` 函数 (及其近亲 `_.throttle`) 的知识，
+	// 请参考：https://lodash.com/docs#debounce
+	this.debouncedGetAnswer = _.debounce(this.getAnswer, 500);
+},
+methods: {
+	getAnswer: function () {
+		this.answer=''
+		var cruiseS=this.cruiseS*29.9792458*1000;
+
+		/*单位制 加速次数 次 燃料效率 % 载荷质量 t 加速度 m/s^2 目标距离 au
+		燃料/载荷比 % 燃料/总重比 % 总重： t 燃料质量： t 单次加速时间： s 
+		单次加速距离： m 旅行时间： s 巡航时间： s 总加速距离占比： % 总加速时间占比： %*/
+		var vE=Math.sqrt(this.effFual/100*2/(1-this.effFual/100))*299792458;
+		this.mass0 =this.mass1*Math.pow(Math.E,cruiseS*this.accTime/vE);
+		this.mass3=this.mass0-this.mass1;
+		this.fualmass0=this.mass3/this.mass0*100;
+		this.fualmass1=this.mass3/this.mass1*100;
+		this.accT=cruiseS/this.acc;
+		this.accW=this.mass3*this.effFual/100*299792458*299792458/this.accT/this.accTime;
+		this.accD=1/2*this.acc*this.accT*this.accT;
+		this.cruiseT=(this.disGoal*149597870.7*1000-this.accD*this.accTime)/cruiseS;
+		this.travelT=this.cruiseT+this.accT*this.accTime;
+		this.asscruiseD=this.accD*this.accTime/(this.disGoal*149597870.7*1000)*100;
+		this.asscruiseT=this.accT*this.accTime/(this.travelT)*100;
+
+		if(cruiseS>3e8){
+			this.answer='<span style="color:red">错误巡航速度大于光速  </span><br/>'+this.answer
+		}
+		else if(cruiseS>2.9e8){
+			this.answer='<span style="color:yellow">警告巡航速度接近光速齐奥尔科夫斯基火箭方程失效  </span><br/>'+this.answer
+		}
+		if(this.effFual>0.89171){
+			this.answer='<span style="color:yellow">警告大于聚变极限  </span><br/>'+this.answer
+		}
+		if(this.cruiseT<0){
+			this.answer='<span style="color:red">错误不能达到巡航速度  </span><br/>'+this.answer
+		}
+		if(this.acc>100){
+			this.answer='<span style="color:yellow">警告超出人类可以承受加速度  </span><br/>'+this.answer
+		}
+		if(this.accW>3.846e23){
+			this.answer='<span style="color:yellow">平均功率超过太阳  </span><br/>'+this.answer
+		}
+		
+
+
+		function num2e(num){
+			var p = Math.floor(Math.log(num)/Math.LN10);
+			var n = num * Math.pow(10, -p);
+			return n.toFixed(5) + 'e' + p;
+		}
+
+		this.accW=num2e(this.accW);
+		this.fualmass1=this.fualmass1.toFixed(5)
+		this.fualmass0=this.fualmass0.toFixed(5)
+		this.mass0=this.mass0.toFixed(5)
+		this.mass3=this.mass3.toFixed(5)
+		this.accT=(this.accT/3600).toFixed(5)
+		this.accD=(this.accD/107925.28488/1000).toFixed(5)
+		this.travelT=(this.travelT/24/3600).toFixed(5)
+		this.cruiseT=(this.cruiseT/24/3600).toFixed(5)
+		this.asscruiseD=this.asscruiseD.toFixed(5)
+		this.asscruiseT=this.asscruiseT.toFixed(5)
+	}
+}
 })
 </script>
 
