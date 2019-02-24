@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	
-	<title>23世纪太阳系</title>
+	<title>太阳系星际航行计算器</title>
 	<script src="./dist/zrender.min.js"></script>
 
 	<!-- 开发环境版本，包含了有帮助的命令行警告 -->
@@ -145,9 +145,10 @@
 	var rotation=Math.PI * 2 / 3;
 	//角动量,单位为天文单位*千米每秒set自身质量为1
 	var angularM = [18.13502,25.33072,29.78023,36.60412,67.86122,91.84563,130.33373,163.31720,181.26005,44.58571,192.00846];
-	
+	var radiusM = [0.0046491,0.000016308, 0.000040454,0.00004258756, 0.000022657, 0.00046733, 0.00038926,0.00016953,0.00016459];//好像是半径但是还没有用
 	var solarSystem = new zrender.Group({origin:[w / 2,h / 2]});
 	var sun = new zrender.Group();
+	var sun2 = new zrender.Group();//比邻星
 	var Mercury = new zrender.Group();
 	var Venus = new zrender.Group();
 	var Earth = new zrender.Group();
@@ -403,10 +404,14 @@
 	drawPlanet(sun,[0,0],25,'#f3dc8a');
 	solarSystem.add(sun);
 	//alert(trP(sunPosition));
+	
+	//增加比邻星位置
+	drawPlanet(sun2,[0,2940710084418382],100,'#f3dc8a');
+	solarSystem.add(sun2);
 
 	var time;
 	var nowDate = new Date();
-	nowDate.setFullYear(2218);
+	nowDate.setFullYear(2219);//每年手动更改
 	/*接收更改的数据*/
 	var reNewDate = window.sessionStorage.getItem("reNewDate");
 	//console.log(nowDate); 
@@ -435,6 +440,7 @@
 	orbitY = getOrbit(paraY,time);
 	orbitSG = getOrbit(paraSG,time);
 	
+
 	//绘制主要天体
 	drawObject(Mercury,orbitM,4,"#efc6bb",'Mercury',angularM[0]);
 	drawObject(Venus,orbitV,7,"#b2cbd1",'Venus',angularM[1]);
@@ -514,7 +520,7 @@
 	
 	var t1 = new zrender.Text({
         style: {
-            text: '©2216-2218 驿宁天文台,all rights reserved',
+            text: '©2216-2219 驿宁天文台,all rights reserved',//每年手动更改
             textAlign: 'right',
             textVerticalAlign: 'bottom',
             fontSize: 15,
@@ -598,7 +604,7 @@
 	<button v-on:click="reNew">
 		更新
 	</button><br/>
-	太阳系缩放比例：<input type="range" min="10" max="100" v-model.number="solarSystemZoom" v-on:mouseup="reRange">
+	太阳系缩放比例：<input type="range" min="10" max="80" v-model.number="solarSystemZoom" v-on:mouseup="reRange">
 </div>
 
 <script>
