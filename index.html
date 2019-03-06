@@ -768,19 +768,19 @@ methods: {
 			this.answer='<span style="color:red">错误巡航速度大于光速  </span><br/>'+this.answer
 		}
 		else if(cruiseS>2.9e8){
-			this.answer='<span style="color:yellow">警告巡航速度接近光速齐奥尔科夫斯基火箭方程失效  </span><br/>'+this.answer
+			this.answer='<span style="color:orange">警告巡航速度接近光速齐奥尔科夫斯基火箭方程失效  </span><br/>'+this.answer
 		}
 		if(this.effFual>0.89171){
-			this.answer='<span style="color:yellow">警告大于聚变极限  </span><br/>'+this.answer
+			this.answer='<span style="color:orange">警告大于聚变极限  </span><br/>'+this.answer
 		}
 		if(this.cruiseT<0){
 			this.answer='<span style="color:red">错误不能达到巡航速度  </span><br/>'+this.answer
 		}
 		if(this.acc>100){
-			this.answer='<span style="color:yellow">警告超出人类可以承受加速度  </span><br/>'+this.answer
+			this.answer='<span style="color:orange">警告超出人类可以承受加速度  </span><br/>'+this.answer
 		}
 		if(this.accW>3.846e23){
-			this.answer='<span style="color:yellow">平均功率超过太阳  </span><br/>'+this.answer
+			this.answer='<span style="color:orange">平均功率超过太阳  </span><br/>'+this.answer
 		}
 		
 
