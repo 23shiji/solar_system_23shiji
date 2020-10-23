@@ -408,7 +408,8 @@
 
 	var time;
 	var nowDate = new Date();
-	nowDate.setFullYear(2219);//每年手动更改
+	var yearFuture = nowDate.getFullYear()+200;
+	nowDate.setFullYear(yearFuture);
 	/*接收更改的数据*/
 	var reNewDate = window.sessionStorage.getItem("reNewDate");
 	//console.log(nowDate); 
@@ -507,7 +508,7 @@
 	
 	var t1 = new zrender.Text({
         style: {
-            text: '©2216-2219 驿宁天文台,all rights reserved',//每年手动更改
+            text: '©2216-'+yearFuture+' 驿宁天文台,all rights reserved',
             textAlign: 'right',
             textVerticalAlign: 'bottom',
             fontSize: 15,
